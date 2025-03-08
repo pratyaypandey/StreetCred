@@ -3,10 +3,22 @@
 <head>
   <title>My Chrome Extension</title>
   <link rel="stylesheet" type="text/css" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="container">
-    <h1>Credit Score Checker</h1>
+    <div class="header">
+      <img src="icons/icon128.png" alt="Logo" class="logo">
+      <h1>Credit Score Checker</h1>
+    </div>
+    
+    <div id="scoreSection" class="score-section hidden">
+      <div class="score-display">
+        <span id="creditScore">---</span>
+      </div>
+      <p class="score-label">Your Credit Score</p>
+    </div>
+
     <button id="checkScore" class="check-button">Check Credit Score</button>
   </div>
   <script src="popup.js"></script>

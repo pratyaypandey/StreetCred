@@ -1,29 +1,81 @@
 body {
   width: 300px;
-  padding: 10px;
-  font-family: Arial, sans-serif;
+  padding: 20px;
+  font-family: 'Roboto', sans-serif;
+  background: #f8f9fa;
+  margin: 0;
 }
 
 .container {
   text-align: center;
 }
 
+.header {
+  margin-bottom: 20px;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 10px;
+}
+
 h1 {
-  font-size: 18px;
-  color: #333;
+  font-size: 20px;
+  color: #1a73e8;
+  margin: 0;
+  font-weight: 500;
+}
+
+.score-section {
+  margin: 20px 0;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.score-section.hidden {
+  display: none;
+  opacity: 0;
+}
+
+.score-display {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a73e8, #34a853);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  color: white;
+  font-size: 32px;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.score-label {
+  color: #5f6368;
+  margin: 0;
+  font-size: 14px;
 }
 
 .check-button {
-  background-color: #4CAF50;
+  background-color: #1a73e8;
   color: white;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 4px;
+  border-radius: 24px;
   cursor: pointer;
-  font-size: 16px;
-  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  transition: background-color 0.2s;
 }
 
 .check-button:hover {
-  background-color: #45a049;
+  background-color: #1557b0;
+}
+
+.check-button:active {
+  transform: scale(0.98);
 } 
