@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     web3_provider_url: str = "https://coston2-api.flare.network/ext/C/rpc"
     # URL for the Flare Network block explorer
     web3_explorer_url: str = "https://coston2-explorer.flare.network/"
+    
+    # plaid setup
+    PLAID_CLIENT_ID: str=""
+    PLAID_SECRET: str=""
+    PLAID_ENV: str=""
+    PLAID_PRODUCTS: str=""
 
     model_config = SettingsConfigDict(
         # This enables .env file support
