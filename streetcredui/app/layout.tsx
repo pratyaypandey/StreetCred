@@ -5,6 +5,7 @@ import { Roboto } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { PlaidProvider } from "@/lib/plaid"
+import { Providers } from "./providers"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -52,16 +53,18 @@ export default function RootLayout({
         `}</style>
       </head>
       <body className={`${roboto.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <PlaidProvider>
-            {children}
-          </PlaidProvider>
-        </ThemeProvider>
+      <Providers>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <PlaidProvider>
+              {children}
+            </PlaidProvider>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   )
