@@ -20,12 +20,14 @@ const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
     async (public_token: string) => {
       try {
         // Exchange public token for access token using our TEE backend
-        const exchangeResponse = await fetch(`${BACKEND_URL}/api/routes/plaid/exchange_public_token`, {
+        const exchangeResponse = await fetch(`${BACKEND_URL}${API_PREFIX}/set_access_token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify({ public_token }),
+          credentials: 'include',
         });
         
         if (!exchangeResponse.ok) {

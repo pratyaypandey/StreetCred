@@ -202,39 +202,40 @@ class PlaidRouter:
                 dict: Contains access_token and item_id
             """
             try:
+                global access_token, item_id
                 # Exchange the public token using Plaid's official client
-                exchange_response = client.item_public_token_exchange(
-                    ItemPublicTokenExchangeRequest(
-                        public_token=request.public_token
-                    )
+                exchange_request = ItemPublicTokenExchangeRequest(
+                    public_token=request.public_token
                 )
-
+                exchange_response = client.item_public_token_exchange(exchange_request)
                 access_token = exchange_response['access_token']
                 item_id = exchange_response['item_id']
 
                 # Store the access token securely in the TEE
-                # For now, we'll just log it (in production, NEVER log sensitive tokens)
                 self.logger.info(
                     "plaid_token_exchanged",
                     item_id=item_id,
                     token_length=len(access_token)
                 )
-                
-                # TODO: Implement secure storage in TEE
-                # 1. Verify we're in a TEE environment
-                # 2. Encrypt the token with TEE-specific encryption
-                # 3. Store the encrypted token securely
-                # 4. Only allow decryption within the TEE
 
-                return {
-                    "access_token": access_token,
-                    "item_id": item_id,
-                }
+                return exchange_response.to_dict()
+            except plaid.ApiException as e:
+                error_response = json.loads(e.body)
+                self.logger.error(
+                    "plaid_token_exchange_failed",
+                    error_type=error_response.get('error_type'),
+                    error_code=error_response.get('error_code'),
+                    error_message=error_response.get('error_message')
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Plaid error: {error_response.get('error_message')}"
+                ) from e
             except Exception as e:
                 self.logger.exception("public_token_exchange_failed", error=str(e))
                 raise HTTPException(
                     status_code=500,
-                    detail="Failed to exchange public token"
+                    detail=f"Failed to exchange public token: {str(e)}"
                 ) from e
 
         @self._router.post("/store_token")
@@ -340,16 +341,23 @@ class PlaidRouter:
             }
         
         @self._router.post("/set_access_token")
-        async def get_access_token(public_token: str):
+        async def get_access_token(request: PlaidPublicTokenRequest):
             global access_token, item_id
             try:
-                exchange_request = plaid.model.ItemPublicTokenExchangeRequest(public_token=public_token)
+                exchange_request = ItemPublicTokenExchangeRequest(public_token=request.public_token)
                 exchange_response = client.item_public_token_exchange(exchange_request)
                 access_token = exchange_response['access_token']
                 item_id = exchange_response['item_id']
                 return exchange_response.to_dict()
             except plaid.ApiException as e:
+                self.logger.error("plaid_token_exchange_failed", error=str(e))
                 return json.loads(e.body)
+            except Exception as e:
+                self.logger.exception("unexpected_error", error=str(e))
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to exchange public token: {str(e)}"
+                ) from e
 
         @self._router.post("/create_link_token")
         async def create_link_token():
