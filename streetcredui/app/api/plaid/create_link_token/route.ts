@@ -23,7 +23,7 @@ export async function POST() {
     const tokenResponse = await client.linkTokenCreate({
       user: { client_user_id: 'user-' + Math.random() },
       client_name: 'StreetCred',
-      products: [Products.Auth],
+      products: [Products.Auth, Products.Transactions, Products.Liabilities],
       country_codes: ['US'],
       language: 'en',
       webhook: 'https://webhook.example.com',

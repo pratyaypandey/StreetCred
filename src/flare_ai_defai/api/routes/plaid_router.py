@@ -89,7 +89,7 @@ configuration = plaid.Configuration(
 api_client = plaid.ApiClient(configuration)
 client = plaid_api.PlaidApi(api_client)
 
-products = []
+products = ["transactions", "liabilities"]
 for product in settings.PLAID_PRODUCTS:
     products.append(Products(product))
 
@@ -347,6 +347,7 @@ class PlaidRouter:
                 exchange_request = ItemPublicTokenExchangeRequest(public_token=request.public_token)
                 exchange_response = client.item_public_token_exchange(exchange_request)
                 access_token = exchange_response['access_token']
+                self.logger.info(f"exchange response: {access_token}")
                 item_id = exchange_response['item_id']
                 return exchange_response.to_dict()
             except plaid.ApiException as e:
