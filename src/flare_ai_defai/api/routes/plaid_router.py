@@ -12,7 +12,7 @@ import json
 import time
 from datetime import date, timedelta
 import uuid
-from plaid import Client
+# from plaid import Client
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 
 from flare_ai_defai.ai import GeminiProvider
@@ -109,12 +109,6 @@ transfer_id = None
 user_token = None
 
 item_id = None
-# Initialize Plaid client
-plaid_client = Client(
-    client_id=settings.plaid_client_id,
-    secret=settings.plaid_secret,
-    environment=settings.plaid_environment
-)
 
 class ChatMessage(BaseModel):
     """
@@ -209,7 +203,7 @@ class PlaidRouter:
             """
             try:
                 # Exchange the public token using Plaid's official client
-                exchange_response = plaid_client.item_public_token_exchange(
+                exchange_response = client.item_public_token_exchange(
                     ItemPublicTokenExchangeRequest(
                         public_token=request.public_token
                     )
