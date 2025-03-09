@@ -39,6 +39,10 @@ COPY --from=backend-builder /flare-ai-defai/src ./src
 COPY --from=backend-builder /flare-ai-defai/pyproject.toml .
 COPY --from=backend-builder /flare-ai-defai/README.md .
 
+# Copy Flare AI backend files
+COPY src/flare_ai_defai /app/flare_ai_defai
+COPY pyproject.toml /app/
+
 # Copy chat-ui frontend files
 COPY --from=frontend-builder /frontend/build /usr/share/nginx/html
 
@@ -55,7 +59,7 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 LABEL "tee.launch_policy.allow_env_override"="GEMINI_API_KEY,GEMINI_MODEL,WEB3_PROVIDER_URL,WEB3_EXPLORER_URL,SIMULATE_ATTESTATION,PLAID_CLIENT_ID,PLAID_SECRET,PLAID_ENV"
 LABEL "tee.launch_policy.log_redirect"="always"
 
-EXPOSE 80 3000
+EXPOSE 80 3000 8080
 
-# Start supervisor (which will start nginx, backend, and streetcredui)
+# Start supervisor (which will start nginx, backend, streetcredui, and flare-ai)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

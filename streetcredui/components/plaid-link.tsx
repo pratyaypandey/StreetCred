@@ -10,6 +10,8 @@ interface PlaidLinkProps {
   children?: React.ReactNode;
 }
 
+const BACKEND_URL = 'http://localhost:8080';
+
 const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
   const { state: { linkToken, isPaymentInitiation }, dispatch } = usePlaid();
 
@@ -17,20 +19,38 @@ const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
     async (public_token: string) => {
       try {
         // Exchange public token for access token using our TEE backend
-        const exchangeResponse = await fetch('http://localhost:8000/plaid/exchange_public_token', {
+        const exchangeResponse = await fetch(`${BACKEND_URL}/api/plaid/exchange_public_token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify({ public_token }),
+          credentials: 'include',
         });
         
         if (!exchangeResponse.ok) {
-          console.error('Error exchanging public token');
+          const errorData = await exchangeResponse.text();
+          console.error('Error exchanging public token:', errorData);
           return;
         }
 
         const data = await exchangeResponse.json();
+
+        // Quick validation check with the backend
+        const validationResponse = await fetch(`${BACKEND_URL}/api/plaid/info`, {
+          headers: {
+            'Accept': 'application/json',
+          },
+          credentials: 'include',
+        });
+        const validationData = await validationResponse.json();
+        
+        if (validationData.access_token) {
+          console.log('✅ Backend successfully received Plaid token');
+        } else {
+          console.error('❌ Backend did not receive Plaid token');
+        }
 
         // Update UI state
         dispatch({
