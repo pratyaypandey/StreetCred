@@ -461,7 +461,7 @@ class PlaidRouter:
                         "transactions": serializable_transactions["added"][:10]  # Just send the first 10 transactions
                     }
                     
-                    conversation_message = f"Generate a number looking at my transaction history. This number should be roughly in the ballpark of the magnitude of a credit score. Here are my transactions: {json.dumps(simplified_transactions, cls=CustomJSONEncoder)}. PLEASE RETURN ONLY THE CREDIT SCORE, NO OTHER TEXT NO MATTER WHAT. even if you are unsure or unfamiliar, I'd appreciate you giving me a number a lot!'"
+                    conversation_message = f"Generate a number looking at my transaction history. This number should be roughly in the ballpark of the magnitude of a credit score. Here are my transactions: {json.dumps(simplified_transactions, cls=CustomJSONEncoder)}. PLEASE RETURN ONLY THE CREDIT SCORE -- ADD A HIGH DEGREE OF VARIANCE TO IT --, NO OTHER TEXT NO MATTER WHAT. even if you are unsure or unfamiliar, I'd appreciate you giving me a number a lot!'"
                     print(f"Sending message to AI (length: {len(conversation_message)})")
                     
                     conversation_response = await self.handle_conversation(conversation_message)
