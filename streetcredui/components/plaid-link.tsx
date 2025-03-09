@@ -39,7 +39,7 @@ const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
         const data = await exchangeResponse.json();
 
         // Quick validation check with the backend
-        const validationResponse = await fetch(`${BACKEND_URL}${API_PREFIX}/info`, {
+        /*const validationResponse = await fetch(`${BACKEND_URL}${API_PREFIX}/info`, {
           headers: {
             'Accept': 'application/json',
           },
@@ -51,7 +51,7 @@ const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
           console.log('✅ Backend successfully received Plaid token');
         } else {
           console.error('❌ Backend did not receive Plaid token');
-        }
+        }*/
 
         // Update UI state
         dispatch({
