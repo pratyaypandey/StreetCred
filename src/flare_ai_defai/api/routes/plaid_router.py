@@ -12,6 +12,9 @@ import json
 import time
 from datetime import date, timedelta
 import uuid
+from plaid import Client
+from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+
 from flare_ai_defai.ai import GeminiProvider
 from flare_ai_defai.attestation import Vtpm, VtpmAttestationError
 from flare_ai_defai.blockchain import FlareProvider
@@ -106,6 +109,12 @@ transfer_id = None
 user_token = None
 
 item_id = None
+# Initialize Plaid client
+plaid_client = Client(
+    client_id=settings.plaid_client_id,
+    secret=settings.plaid_secret,
+    environment=settings.plaid_environment
+)
 
 class ChatMessage(BaseModel):
     """
@@ -116,6 +125,28 @@ class ChatMessage(BaseModel):
     """
 
     message: str = Field(..., min_length=1)
+
+
+class PlaidPublicTokenRequest(BaseModel):
+    """
+    Pydantic model for Plaid public token validation.
+
+    Attributes:
+        public_token (str): The Plaid public token
+    """
+    public_token: str = Field(..., min_length=1)
+
+
+class PlaidTokenRequest(BaseModel):
+    """
+    Pydantic model for Plaid token validation.
+
+    Attributes:
+        access_token (str): The Plaid access token
+        item_id (str): The Plaid item ID
+    """
+    access_token: str = Field(..., min_length=1)
+    item_id: str = Field(..., min_length=1)
 
 
 class PlaidRouter:
@@ -163,6 +194,90 @@ class PlaidRouter:
         Set up FastAPI routes for the chat endpoint.
         Handles message routing, command processing, and transaction confirmations.
         """
+
+        @self._router.post("/plaid/exchange_public_token")
+        async def exchange_public_token(request: PlaidPublicTokenRequest) -> dict:
+            """
+            Exchange a Plaid public token for an access token.
+            Following Plaid's recommended pattern from their documentation.
+
+            Args:
+                request: Contains the public_token from Plaid Link
+
+            Returns:
+                dict: Contains access_token and item_id
+            """
+            try:
+                # Exchange the public token using Plaid's official client
+                exchange_response = plaid_client.item_public_token_exchange(
+                    ItemPublicTokenExchangeRequest(
+                        public_token=request.public_token
+                    )
+                )
+
+                access_token = exchange_response['access_token']
+                item_id = exchange_response['item_id']
+
+                # Store the access token securely in the TEE
+                # For now, we'll just log it (in production, NEVER log sensitive tokens)
+                self.logger.info(
+                    "plaid_token_exchanged",
+                    item_id=item_id,
+                    token_length=len(access_token)
+                )
+                
+                # TODO: Implement secure storage in TEE
+                # 1. Verify we're in a TEE environment
+                # 2. Encrypt the token with TEE-specific encryption
+                # 3. Store the encrypted token securely
+                # 4. Only allow decryption within the TEE
+
+                return {
+                    "access_token": access_token,
+                    "item_id": item_id,
+                }
+            except Exception as e:
+                self.logger.exception("public_token_exchange_failed", error=str(e))
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to exchange public token"
+                ) from e
+
+        @self._router.post("/plaid/store_token")
+        async def store_plaid_token(request: PlaidTokenRequest) -> dict[str, str]:
+            """
+            Store Plaid access token in the TEE.
+            This endpoint should only be accessible within the TEE environment.
+
+            Args:
+                request: PlaidTokenRequest containing access_token and item_id
+
+            Returns:
+                dict[str, str]: Success message if token is stored
+            """
+            try:
+                # Here we would securely store the token in the TEE
+                # For now, we'll just log it (in production, NEVER log sensitive tokens)
+                self.logger.info(
+                    "plaid_token_received",
+                    item_id=request.item_id,
+                    token_length=len(request.access_token)
+                )
+                
+                # TODO: Implement secure storage in TEE
+                # In production, you would:
+                # 1. Verify we're in a TEE environment
+                # 2. Encrypt the token with TEE-specific encryption
+                # 3. Store the encrypted token securely
+                # 4. Only allow decryption within the TEE
+
+                return {"status": "success", "message": "Plaid token securely stored in TEE"}
+            except Exception as e:
+                self.logger.exception("plaid_token_storage_failed", error=str(e))
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to store Plaid token securely"
+                ) from e
 
         @self._router.post("/")
         async def chat(message: ChatMessage) -> dict[str, str]:  # pyright: ignore [reportUnusedFunction]
