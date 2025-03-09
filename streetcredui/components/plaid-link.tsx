@@ -10,7 +10,7 @@ interface PlaidLinkProps {
   children?: React.ReactNode;
 }
 
-const BACKEND_URL = 'http://localhost:8080';
+const BACKEND_URL = 'http://34.19.7.118:8080';
 const API_PREFIX = '/api/routes/plaid';
 
 const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {

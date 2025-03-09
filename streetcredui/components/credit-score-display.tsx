@@ -21,7 +21,7 @@ export function CreditScoreDisplay() {
     // If no score in sessionStorage, fetch from API
     if (!finalScore) {
       // Fetch the credit score from the API
-      fetch('http://localhost:8080/api/routes/plaid/credit_score')
+      fetch('http://34.19.7.118:8080/api/routes/plaid/credit_score')
         .then(response => response.json())
         .then(data => {
           console.log(`Credit score API data received:`, data)
