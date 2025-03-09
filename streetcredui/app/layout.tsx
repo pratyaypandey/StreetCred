@@ -1,19 +1,15 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import { Roboto } from "next/font/google"
+import { Outfit } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { PlaidProvider } from "@/lib/plaid"
 import { Providers } from "./providers"
 
-const inter = Inter({ subsets: ["latin"] })
-
-// Load Roboto font
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--roboto",
+const outfit = Outfit({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-outfit',
 })
 
 export const metadata: Metadata = {
@@ -44,16 +40,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <style>{`
-          :root {
-            --roboto: ${roboto.style.fontFamily}, sans-serif;
-          }
-        `}</style>
-      </head>
-      <body className={`${roboto.variable} font-sans antialiased`}>
-      <Providers>
+    <html lang="en" className={outfit.variable} suppressHydrationWarning>
+      <body className="font-sans antialiased">
+        <Providers>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

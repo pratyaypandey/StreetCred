@@ -91,7 +91,7 @@ export function CreditScoreDisplay() {
         transition={{ duration: 0.5 }}
         className="text-center mb-8"
       >
-        <h2 className="text-3xl font-bold mb-2">Your StreetCred Score</h2>
+        <h2 className="text-3xl text-black font-bold mb-2">Your StreetCred Score</h2>
         <p className="text-[#363636]/70">Based on your traditional and on-chain financial activity</p>
       </motion.div>
 
