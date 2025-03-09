@@ -75,6 +75,37 @@ from plaid.api import plaid_api
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
+configuration = plaid.Configuration(
+    host=plaid.Environment.Sandbox,
+    api_key={
+        'clientId': settings.PLAID_CLIENT_ID,
+        'secret': settings.PLAID_SECRET,
+        'plaidVersion': '2020-09-14'
+    }
+)
+api_client = plaid.ApiClient(configuration)
+client = plaid_api.PlaidApi(api_client)
+
+products = []
+for product in settings.PLAID_PRODUCTS:
+    products.append(Products(product))
+
+# We store the access_token in memory - in production, store it in a secure
+# persistent data store.
+access_token = None
+# The payment_id is only relevant for the UK Payment Initiation product.
+# We store the payment_id in memory - in production, store it in a secure
+# persistent data store.
+payment_id = None
+# The transfer_id is only relevant for Transfer ACH product.
+# We store the transfer_id in memory - in production, store it in a secure
+# persistent data store.
+transfer_id = None
+# We store the user_token in memory - in production, store it in a secure
+# persistent data store.
+user_token = None
+
+item_id = None
 
 class ChatMessage(BaseModel):
     """
@@ -190,10 +221,28 @@ class PlaidRouter:
             except Exception as e:
                 self.logger.exception("message_handling_failed", error=str(e))
                 raise HTTPException(status_code=500, detail=str(e)) from e
-            
-        @self._router.get("/test")
-        async def test_endpoint():
-            return {"message": settings.PLAID_CLIENT_ID}
+        
+        @self._router.get("/info")
+        async def info():
+            return {
+                "item_id": item_id,
+                "access_token": access_token,
+                "products": settings.PLAID_PRODUCTS
+            }
+        
+        @self._router.post("/set_access_token")
+        async def get_access_token(public_token: str):
+            global access_token, item_id
+            try:
+                exchange_request = plaid.model.ItemPublicTokenExchangeRequest(public_token=public_token)
+                exchange_response = client.item_public_token_exchange(exchange_request)
+                access_token = exchange_response['access_token']
+                item_id = exchange_response['item_id']
+                return exchange_response.to_dict()
+            except plaid.ApiException as e:
+                return json.loads(e.body)
+
+
 
     @property
     def router(self) -> APIRouter:
