@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 import structlog
 from fastapi import APIRouter, HTTPException
@@ -141,6 +142,24 @@ class PlaidTokenRequest(BaseModel):
     """
     access_token: str = Field(..., min_length=1)
     item_id: str = Field(..., min_length=1)
+
+
+class TransactionsSyncRequest(BaseModel):
+    """
+    Pydantic model for Plaid transactions sync request.
+
+    Attributes:
+        client_id (str): The Plaid client ID
+        secret (str): The Plaid secret key
+        access_token (str): The Plaid access token
+        cursor (str, optional): The cursor for pagination
+        count (int, optional): The number of transactions to fetch
+    """
+    client_id: str = Field(..., min_length=1)
+    secret: str = Field(..., min_length=1)
+    access_token: str = Field(..., min_length=1)
+    cursor: Optional[str] = None
+    count: Optional[int] = 500
 
 
 class PlaidRouter:
@@ -347,9 +366,77 @@ class PlaidRouter:
                 exchange_request = ItemPublicTokenExchangeRequest(public_token=request.public_token)
                 exchange_response = client.item_public_token_exchange(exchange_request)
                 access_token = exchange_response['access_token']
-                self.logger.info(f"exchange response: {access_token}")
                 item_id = exchange_response['item_id']
-                return exchange_response.to_dict()
+                
+                # Log the access token (in production, you would never log sensitive tokens)
+                self.logger.info(
+                    "plaid_token_exchanged",
+                    item_id=item_id,
+                    token_length=len(access_token)
+                )
+                
+                # Initialize response dictionary with exchange response
+                response_data = {
+                    "exchange_response": exchange_response.to_dict()
+                }
+                
+                # Fetch transactions
+                try:
+                    sync_request = plaid.model.transactions_sync_request.TransactionsSyncRequest(
+                        access_token=access_token,
+                        cursor=None,
+                        count=500
+                    )
+                    
+                    transactions_response = client.transactions_sync(sync_request)
+                    
+                    # Log transaction data summary to the same logger
+                    self.logger.info(
+                        "plaid_transactions_fetched",
+                        item_id=item_id,
+                        added_count=len(transactions_response['added']),
+                        modified_count=len(transactions_response['modified']),
+                        removed_count=len(transactions_response['removed']),
+                        has_more=transactions_response['has_more'],
+                        # Log a sample of the first transaction if available
+                        sample_transaction=transactions_response['added'][0].to_dict() if transactions_response['added'] else None
+                    )
+                    
+                    response_data["transactions"] = transactions_response.to_dict()
+                    
+                except Exception as e:
+                    self.logger.exception("transactions_sync_failed", error=str(e))
+                    response_data["transactions_error"] = str(e)
+                
+                # Fetch liabilities
+                try:
+                    liabilities_request = plaid.model.liabilities_get_request.LiabilitiesGetRequest(
+                        access_token=access_token
+                    )
+                    
+                    liabilities_response = client.liabilities_get(liabilities_request)
+                    
+                    # Log liabilities data summary to the same logger
+                    self.logger.info(
+                        "plaid_liabilities_fetched",
+                        item_id=item_id,
+                        accounts_count=len(liabilities_response['accounts']),
+                        has_liabilities="liabilities" in liabilities_response,
+                        # Log account types if available
+                        account_types=[account.get('type') for account in liabilities_response['accounts']] if 'accounts' in liabilities_response else [],
+                        # Log liability types if available
+                        liability_types=list(liabilities_response['liabilities'].keys()) if 'liabilities' in liabilities_response else []
+                    )
+                    
+                    response_data["liabilities"] = liabilities_response.to_dict()
+                    
+                except Exception as e:
+                    self.logger.exception("liabilities_fetch_failed", error=str(e))
+                    response_data["liabilities_error"] = str(e)
+                
+                # Return all collected data
+                return response_data
+                
             except plaid.ApiException as e:
                 self.logger.error("plaid_token_exchange_failed", error=str(e))
                 return json.loads(e.body)
@@ -379,6 +466,131 @@ class PlaidRouter:
                 raise HTTPException(
                     status_code=500,
                     detail="Failed to create link token"
+                ) from e
+
+        @self._router.post("/transactions/sync")
+        async def sync_transactions(request: TransactionsSyncRequest) -> dict:
+            """
+            Fetch transactions using Plaid's transactions/sync endpoint.
+            
+            Args:
+                request: Contains access_token, cursor, and count parameters
+                
+            Returns:
+                dict: Contains added, modified, removed transactions and a cursor
+            """
+            try:
+                # Configure a new client with the provided credentials
+                # This allows the endpoint to work with different credentials if needed
+                config = plaid.Configuration(
+                    host=plaid.Environment.Sandbox,
+                    api_key={
+                        'clientId': request.client_id,
+                        'secret': request.secret,
+                    }
+                )
+                api_client = plaid.ApiClient(config)
+                temp_client = plaid_api.PlaidApi(api_client)
+                
+                # Create the transactions sync request
+                sync_request = plaid.model.transactions_sync_request.TransactionsSyncRequest(
+                    access_token=request.access_token,
+                    cursor=request.cursor,
+                    count=request.count
+                )
+                
+                # Call the Plaid API
+                response = temp_client.transactions_sync(sync_request)
+                
+                # Log success (without sensitive data)
+                self.logger.info(
+                    "transactions_synced",
+                    added_count=len(response['added']),
+                    modified_count=len(response['modified']),
+                    removed_count=len(response['removed']),
+                    has_more=response['has_more']
+                )
+                
+                # Return the response
+                return response.to_dict()
+                
+            except plaid.ApiException as e:
+                error_response = json.loads(e.body)
+                self.logger.error(
+                    "transactions_sync_failed",
+                    error_type=error_response.get('error_type'),
+                    error_code=error_response.get('error_code'),
+                    error_message=error_response.get('error_message')
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Plaid error: {error_response.get('error_message')}"
+                ) from e
+            except Exception as e:
+                self.logger.exception("transactions_sync_failed", error=str(e))
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to sync transactions: {str(e)}"
+                ) from e
+
+        @self._router.post("/liabilities/get")
+        async def get_liabilities(request: dict):
+            """
+            Fetch liabilities for a given access token.
+            
+            Args:
+                request: Contains client_id, secret, and access_token
+                
+            Returns:
+                dict: Contains accounts and liabilities information
+            """
+            try:
+                # Configure a new client with the provided credentials
+                config = plaid.Configuration(
+                    host=plaid.Environment.Sandbox,
+                    api_key={
+                        'clientId': request.get('client_id'),
+                        'secret': request.get('secret'),
+                    }
+                )
+                api_client = plaid.ApiClient(config)
+                temp_client = plaid_api.PlaidApi(api_client)
+                
+                # Create the liabilities request
+                liabilities_request = plaid.model.liabilities_get_request.LiabilitiesGetRequest(
+                    access_token=request.get('access_token')
+                )
+                
+                # Call the Plaid API
+                response = temp_client.liabilities_get(liabilities_request)
+                
+                # Log success (without sensitive data)
+                self.logger.info(
+                    "liabilities_fetched",
+                    accounts_count=len(response['accounts']),
+                    has_liabilities="liabilities" in response
+                )
+                
+                # Return the response
+                return response.to_dict()
+                
+            except plaid.ApiException as e:
+                error_response = json.loads(e.body)
+                self.logger.error(
+                    "liabilities_fetch_failed",
+                    error_type=error_response.get('error_type'),
+                    error_code=error_response.get('error_code'),
+                    error_message=error_response.get('error_message')
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Plaid error: {error_response.get('error_message')}"
+                ) from e
+            except Exception as e:
+                self.logger.exception("liabilities_fetch_failed", error=str(e))
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to fetch liabilities: {str(e)}"
                 ) from e
 
     @property
