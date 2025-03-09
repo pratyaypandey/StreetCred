@@ -84,7 +84,7 @@ def create_app() -> FastAPI:
 
     # Register chat routes with API
     app.include_router(chat.router, prefix="/api/routes/chat", tags=["chat"])
-    app.include_router(plaid.router, prefix="/api/plaid", tags=["plaid"])
+    app.include_router(plaid.router, prefix="/api/routes/plaid", tags=["plaid"])
     return app
 
 

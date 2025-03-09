@@ -189,7 +189,7 @@ class PlaidRouter:
         Handles message routing, command processing, and transaction confirmations.
         """
 
-        @self._router.post("/plaid/exchange_public_token")
+        @self._router.post("/exchange_public_token")
         async def exchange_public_token(request: PlaidPublicTokenRequest) -> dict:
             """
             Exchange a Plaid public token for an access token.
@@ -237,7 +237,7 @@ class PlaidRouter:
                     detail="Failed to exchange public token"
                 ) from e
 
-        @self._router.post("/plaid/store_token")
+        @self._router.post("/store_token")
         async def store_plaid_token(request: PlaidTokenRequest) -> dict[str, str]:
             """
             Store Plaid access token in the TEE.
@@ -351,7 +351,26 @@ class PlaidRouter:
             except plaid.ApiException as e:
                 return json.loads(e.body)
 
-
+        @self._router.post("/create_link_token")
+        async def create_link_token():
+            try:
+                request = LinkTokenCreateRequest(
+                    products=products,
+                    client_name="StreetCred",
+                    country_codes=[CountryCode('US')],
+                    language='en',
+                    user=LinkTokenCreateRequestUser(
+                        client_user_id=str(uuid.uuid4())
+                    )
+                )
+                response = client.link_token_create(request)
+                return {"link_token": response['link_token']}
+            except plaid.ApiException as e:
+                self.logger.exception("create_link_token_failed", error=str(e))
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to create link token"
+                ) from e
 
     @property
     def router(self) -> APIRouter:

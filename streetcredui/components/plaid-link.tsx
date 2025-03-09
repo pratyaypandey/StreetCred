@@ -11,6 +11,7 @@ interface PlaidLinkProps {
 }
 
 const BACKEND_URL = 'http://localhost:8080';
+const API_PREFIX = '/api/routes/plaid';
 
 const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
   const { state: { linkToken, isPaymentInitiation }, dispatch } = usePlaid();
@@ -19,14 +20,12 @@ const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
     async (public_token: string) => {
       try {
         // Exchange public token for access token using our TEE backend
-        const exchangeResponse = await fetch(`${BACKEND_URL}/api/plaid/exchange_public_token`, {
+        const exchangeResponse = await fetch(`${BACKEND_URL}/api/routes/plaid/exchange_public_token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
           },
           body: JSON.stringify({ public_token }),
-          credentials: 'include',
         });
         
         if (!exchangeResponse.ok) {
@@ -38,7 +37,7 @@ const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
         const data = await exchangeResponse.json();
 
         // Quick validation check with the backend
-        const validationResponse = await fetch(`${BACKEND_URL}/api/plaid/info`, {
+        const validationResponse = await fetch(`${BACKEND_URL}${API_PREFIX}/info`, {
           headers: {
             'Accept': 'application/json',
           },
@@ -83,7 +82,13 @@ const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
   useEffect(() => {
     if (linkToken == null) {
       const getInfo = async () => {
-        const response = await fetch('/api/plaid/info', { method: 'POST' });
+        const response = await fetch(`${BACKEND_URL}${API_PREFIX}/info`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          credentials: 'include',
+        });
         if (!response.ok) {
           dispatch({ type: 'SET_STATE', state: { backend: false } });
           return;
