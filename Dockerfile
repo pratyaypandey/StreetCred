@@ -9,7 +9,7 @@ RUN npm run build
 FROM node:18-alpine AS streetcred-builder
 WORKDIR /streetcred
 COPY streetcredui/ .
-RUN npm install
+RUN npm install --legacy-peer-deps
 RUN npm run build
 
 # Stage 3: Build Backend
