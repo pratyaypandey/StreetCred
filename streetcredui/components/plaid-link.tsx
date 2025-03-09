@@ -9,8 +9,7 @@ interface PlaidLinkProps {
   className?: string;
   children?: React.ReactNode;
 }
-const hostname = window.location.hostname;
-const BACKEND_URL = `http://${hostname}:8080`;
+const BACKEND_URL = `http://34.169.48.165:8080`;
 const API_PREFIX = '/api/routes/plaid';
 
 const PlaidLink: React.FC<PlaidLinkProps> = ({ className, children }) => {
