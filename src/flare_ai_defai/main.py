@@ -17,6 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from flare_ai_defai import (
+    PlaidRouter,
     ChatRouter,
     FlareProvider,
     GeminiProvider,
@@ -74,9 +75,16 @@ def create_app() -> FastAPI:
         attestation=Vtpm(simulate=settings.simulate_attestation),
         prompts=PromptService(),
     )
+    plaid = PlaidRouter(
+        ai=GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model),
+        blockchain=FlareProvider(web3_provider_url=settings.web3_provider_url),
+        attestation=Vtpm(simulate=settings.simulate_attestation),
+        prompts=PromptService(),
+    )
 
     # Register chat routes with API
     app.include_router(chat.router, prefix="/api/routes/chat", tags=["chat"])
+    app.include_router(plaid.router, prefix="/api/plaid", tags=["plaid"])
     return app
 
 
