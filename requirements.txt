@@ -1,0 +1,23 @@
+# StreetCred Backend Dependencies
+# Generated from pyproject.toml for pip users
+# For better performance, consider using UV: https://docs.astral.sh/uv/
+
+aiohttp>=3.11.11
+pydantic-settings>=2.7.1
+requests>=2.32.3
+structlog>=25.1.0
+google-generativeai>=0.8.3
+httpx>=0.28.1
+cryptography>=44.0.1
+pyjwt>=2.10.1
+pyopenssl>=25.0.0
+fastapi>=0.115.8
+uvicorn>=0.34.0
+flask>=3.0.0
+web3>=7.8.0
+plaid-python>=12.0.0
+
+# Development dependencies (optional)
+# pyright>=1.1.391
+# pytest>=8.3.4
+# ruff>=0.9.1 

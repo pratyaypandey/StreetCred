@@ -64,7 +64,7 @@ const Link = () => {
   };
 
   if (window.location.href.includes("?oauth_state_id=")) {
-    // TODO: figure out how to delete this ts-ignore
+    // Note: TypeScript ignore is needed due to Plaid SDK type definitions
     // @ts-ignore
     config.receivedRedirectUri = window.location.href;
     isOauth = true;
